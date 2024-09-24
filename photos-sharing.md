@@ -1,6 +1,6 @@
 # Photo sharing apps System Design
 
-membuat design system untuk aplikasi sharing photo yang menampilkan list photo yang dipost oleh user. dan juga user bisa membuat postingan baru berupa poto dan captionnya.
+membuat design system untuk aplikasi sharing photo yang menampilkan list photo yang dipost oleh user. dan juga user bisa membuat postingan baru berupa photo dan captionnya.
 
 ![mockig](https://github.com/user-attachments/assets/db5d5835-539a-4eed-b73a-b7f12afdf39f)
 
@@ -8,7 +8,7 @@ membuat design system untuk aplikasi sharing photo yang menampilkan list photo y
 
 **core features yang akan disupport ?**
 
-- feed yang mengandung photo yang diposting oleh akun yang difollow user dan photo yang diupload user.
+- feed photo yang diposting oleh akun yang difollow user dan photo yang diupload user.
 - upload, add caption dan apply filter sebelum diposting
 
 **Pagination seperti apa yang cocok untuk feed nya ?**
@@ -21,13 +21,13 @@ membuat design system untuk aplikasi sharing photo yang menampilkan list photo y
 
 **device apa yang digunakan untuk aplikasi ini ?**
 
-- fokus utama mobile, tapi harusnya bisa digunkana di desktop maupun tablet juga
+- fokus utama mobile, tapi harusnya bisa digunkana di desktop maupun tablet juga.
 
 ## Arch / High level design
 
 ### Rendering approach
 
-- interaksi di aplikasi lebih banyak di fitur pembuatan postingan dan fungsi like/coment pada postingan
+- interaksi di aplikasi lebih banyak di fitur pembuatan postingan
 - initial loading cepat dibutuhkan
 
 ### Arch Diagram
@@ -36,7 +36,7 @@ membuat design system untuk aplikasi sharing photo yang menampilkan list photo y
 
 - **Server**, provide HTTP API fetch feed posts, upload images, dan create posts
 - **Controller**, control data flow (bisnis flow) di aplikasi dan melakukan network request ke server
-- **Client Sore,** menyimpan data yang dibutuhkan dengan scope global di aplikasi. (session login user, data user)
+- **Client Sore,** menyimpan data yang dibutuhkan dengan scope global di aplikasi. (session login user, data user, data feed)
 - **Feed UI**, list photo yang dipost dan UI untuk create postingan
   - **image post**, list photo yang dipost
   - **post composer**, UI untuk upload photo, apply filter di foto, dan menambahkan caption untuk photo yang akan dipost ke server.
@@ -70,24 +70,28 @@ menggunakan api terpisah antara upload image dan create post. agar bisa melakuka
 
 ![flow upload](https://github.com/user-attachments/assets/9a141d2a-acde-4eb9-9471-501c9a25fc3a)
 
-## Optimisasi
+## Optimisasi dan Deepdive
 
 ### General Optimisasi
 
 - code splitting javascript
   - lazy load page create post, karena initial load pasti di page feed.
 
-### Feed Optimisasi dan deepdive
+### Feed Optimisasi
 
 - infinite scrolling
   - kita bisa optimize loading time ketika fetch feed baru, perlu melakukan fetch sebelum user mencapai akhir dari list postingan. jadi ketika user mencapai akhir dari feed, user tidak melihat ada loading indikator ketika fetch. untuk implementasi infinite scrolling sendiri bisa pakai intersection observer API.
 - virtualized list
   - mengurangi DOM yang diappend yang akan secara otomatis mengurangi memory usage.
   - menampilkan feed yang masuk di viewport. feed yang tidak masuk akan dihide.
+- Stale Feeds
+  - toast yang muncul memberitahukan ke user kalau ada postingan baru, dengan interval waktu tertentu, sekitar 30 menit. bisa kurang dari itu jika user dari aplikasi lebih banyak.
+  - ketika user memencet toast tersebut, maka akan refetch ulang list feed.
+  - data feed yang ada di client store akan dihapus semua dan diganti dengan data baru.
 
 ### Image Carousel Optimisasi
 
-- fetch 3 item awal. ketika user berada pada 2 item terakhir di carousel, baru fetch 3 image selanjutnya. dan begitu seterusnya.
+- fetch 5 item awal. ketika user berada pada 2 item terakhir di carousel, baru fetch 3 image selanjutnya. dan begitu seterusnya.
 
 ### Rendering Images
 
@@ -97,7 +101,7 @@ menggunakan api terpisah antara upload image dan create post. agar bisa melakuka
   - bisa dibuat auto generate text untuk alt dengan memanfaat kan machine learning.
 - image loading berdasarkan ukuran screen dari device.
   - mengirimkan dimensi browser ketika init request. setelah itu dari server akan menentukan image dengan ukuran berapa yang akan dikirimkan.
-  - menggunakan atribut srcset pada tag img. mencantumkan kandidat gambar di masing2 resolusi atau lebar gambar.
+  - menggunakan atribut `srcset` pada tag `img`. mencantumkan kandidat gambar di masing2 resolusi atau lebar gambar.
 
 ```jsx
 <img
@@ -111,7 +115,7 @@ menggunakan api terpisah antara upload image dan create post. agar bisa melakuka
 
 - adaptive image loading berdasarkan network speed.
   - Good network
-    - prefetch image yang tidak muncul di layar tapi akan masuk dalam area layar.
+    - prefetch image yang tidak muncul di layar, tapi akan masuk dalam area layar.
   - Bad network
     - memuat placeholder gambar dengan berukuran rendah. dan memberikan interaksi ke user jika user ingin me load gambar dengan resolusi normal.
 
@@ -152,7 +156,7 @@ cropping dan resizing bisa dilakukan menggunakan HTML5 `canvas`
 
 Setelah gambar diolah dalam canvas, Anda bisa mengekspor hasilnya menggunakan `canvas.toBlob()` untuk nantinya diupload dengan formData.
 
-### FIlters
+### Filters
 
 css provide `filter` property yang mana bisa mengimplementasikan fungsionaliti seperti `blur` `contrast` `hue` `sepia`. dengan mengkombinasikan fungsionaliti filter tersebut, filter seperti yang ada di instagram bisa diachieve di browser.
 
